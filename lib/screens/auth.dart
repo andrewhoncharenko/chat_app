@@ -1,5 +1,6 @@
 import "dart:io";
 import "package:flutter/material.dart";
+import "package:firebase_core/firebase_core.dart";
 import "package:firebase_auth/firebase_auth.dart";
 import "package:firebase_storage/firebase_storage.dart";
 import "package:cloud_firestore/cloud_firestore.dart";
@@ -35,7 +36,7 @@ class AuthScreenState extends State<AuthScreen> {
         _isAuthenticating = true;
       });
       if (_isLogin) {
-        final UserCredential userCredentials = await _firebase
+        await _firebase
             .signInWithEmailAndPassword(
             email: _enteredEmail,
             password: _enteredPassword
@@ -50,18 +51,14 @@ class AuthScreenState extends State<AuthScreen> {
         final Reference storageRef = FirebaseStorage.instance.ref().child("user_images").child("${userCredentials.user!.uid}.jpg");
 
         await storageRef.putFile(_selectedImage!);
+
         final String imageUrl = await storageRef.getDownloadURL();
-        await FirebaseFirestore.instance.collection("users").
-        doc(userCredentials.user!.uid).
-        set({
+        await FirebaseFirestore.instanceFor(app: Firebase.app(), databaseId: "chat").collection("users").doc(userCredentials.user!.uid).set({
           "username": _enteredUsername,
           "email": _enteredEmail,
           "image_url": imageUrl
         });
       }
-      setState(() {
-        _isAuthenticating = false;
-      });
     }
     on FirebaseAuthException catch (error) {
       ScaffoldMessenger.of(context).clearSnackBars();
